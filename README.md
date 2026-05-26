@@ -137,14 +137,6 @@ bash scripts/eval/eval_dl3dv_mesh.sh \
   --data-root "$DL3DV_ROOT"
 ```
 
-<p align="center">
-  <img src="https://lhmd.top/trisplat/assets/figures/web/efficiency.png" alt="TriSplat efficiency comparison" width="100%">
-</p>
-
-<p align="center">
-  <img src="https://lhmd.top/trisplat/assets/figures/main_simulation_demo.png" alt="Simulation-ready mesh demo" width="100%">
-</p>
-
 ## Simulation
 
 TriSplat exports ordinary triangle meshes, so the output can be opened directly by common graphics and simulation tools. The evaluation scripts above write per-scene meshes under:
