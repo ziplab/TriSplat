@@ -1,0 +1,50 @@
+# @package _global_
+
+dataset:
+  scannetpp:
+    view_sampler:
+      num_context_views: 32
+      index_path: assets/scannetpp_ctx_32v_tgt_16v.json
+
+evaluation:
+  methods:
+    - name: Ours_32v
+      key: Ours_32v
+      path: outputs/eval/Ours_32v
+    - name: Ours_64v
+      key: Ours_64v
+      path: outputs/eval/Ours_64v
+    - name: Ours_128v
+      key: Ours_128v
+      path: outputs/eval/Ours_128v
+    - name: Ours_32v_intrin
+      key: Ours_32v_intrin
+      path: outputs/eval/Ours_32v_intrin
+    - name: Ours_64v_intrin
+      key: Ours_64v_intrin
+      path: outputs/eval/Ours_64v_intrin
+    - name: Ours_128v_intrin
+      key: Ours_128v_intrin
+      path: outputs/eval/Ours_128v_intrin
+    - name: AnySplat_32v
+      key: AnySplat_32v
+      path: outputs/eval/AnySplat_32v
+    - name: AnySplat_64v
+      key: AnySplat_64v
+      path: outputs/eval/AnySplat_64v
+    - name: AnySplat_128v
+      key: AnySplat_128v
+      path: outputs/eval/AnySplat_128v
+
+  side_by_side_path: null
+  animate_side_by_side: false
+  highlighted:
+    # Main Paper
+    - scene: 32ce9b303717a29d
+      target_index: 216
+    - scene: 45e6fa48ddd00e87
+      target_index: 127
+    - scene: 7a13c5debea977a8
+      target_index: 37
+
+  output_metrics_path: baselines/re10k/evaluation_metrics.json

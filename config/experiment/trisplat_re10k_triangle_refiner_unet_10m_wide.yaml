@@ -1,0 +1,77 @@
+# @package _global_
+
+defaults:
+  - /dataset@_group_.re10k: re10k
+  - override /model/encoder: trisplat
+  - override /model/encoder/backbone: local_global
+  - override /model/decoder: triangle_splatting_cuda
+  - override /loss: [mse, lpips, pose, intrinsic, normal_teacher]
+
+wandb:
+  name: re10k_triangle_refiner_unet_10m
+  tags: [re10k, 224x224, triangle, refiner_unet_10m]
+
+model:
+  encoder:
+    name: trisplat
+    pose_free: true
+    pretrained_weights: './pretrained_weights/pi3.safetensors'
+    gt_pose_sampling_decay_start_step: 80000
+    gt_pose_sampling_decay_end_step: 100000
+    gt_pose_final_sample_ratio: 0.9
+    use_triangle: true
+    geometry_normal:
+      refiner:
+        arch: unet
+        hidden_dim: 36
+        num_blocks: 2
+        num_scales: 4
+        kernel_size: 3
+    triangle_adapter:
+      triangle_scale_min: 0.5
+      triangle_scale_max: 18.0
+      sh_degree: 0
+      sigma_scale_initial: 1.0
+      sigma_scale_final: 0.5
+      sigma_warmup_steps: 16000
+      coverage_scale_boost: 0.0
+      coverage_opacity_threshold: 0.20
+    backbone:
+      predict_intrinsics: true
+  decoder:
+    opacity_temp_warmup_steps: 16000
+
+dataset:
+  re10k:
+    input_image_shape: [224, 224]
+    pose_norm_method: max_pairwise_d
+    view_sampler:
+      warm_up_steps: 75000
+      num_context_views: 2
+      initial_min_distance_between_context_views: 40
+      initial_max_distance_between_context_views: 50
+      min_distance_between_context_views: 50
+      max_distance_between_context_views: 180
+
+optimizer:
+  lr: 2e-4
+  warm_up_steps: 2000
+  backbone_lr_multiplier: 0.01
+
+data_loader:
+  train:
+    batch_size: 1
+
+trainer:
+  max_steps: 300002
+  val_check_interval: 2000
+
+train:
+  train_ignore_large_loss_after_steps: 30000
+  use_mono_normal_teacher: true
+  normal_bootstrap:
+    teacher_takeover_end_step: 6000
+    teacher_blend_end_step: 20000
+
+checkpointing:
+  every_n_train_steps: 10000

@@ -1,0 +1,84 @@
+# @package _global_
+
+defaults:
+  - /dataset@_group_.scannet: scannet
+  - override /model/encoder: trisplat
+  - override /model/encoder/backbone: local_global
+  - override /model/decoder: triangle_splatting_cuda
+  - override /loss: [mse, lpips, pose, intrinsic, normal_teacher]
+
+wandb:
+  name: scannet_from_re10k_triangle_refiner_unet_10m
+  tags: [scannet, re10k, cross_dataset, 224x224, triangle, refiner_unet_10m]
+
+model:
+  encoder:
+    name: trisplat
+    pose_free: false
+    pretrained_weights: './pretrained_weights/pi3.safetensors'
+    gt_pose_sampling_decay_start_step: 160000
+    gt_pose_sampling_decay_end_step: 200000
+    gt_pose_final_sample_ratio: 0.9
+    use_triangle: true
+    geometry_normal:
+      refiner:
+        arch: unet
+        hidden_dim: 36
+        num_blocks: 2
+        num_scales: 4
+        kernel_size: 3
+    triangle_adapter:
+      triangle_scale_min: 0.2
+      triangle_scale_max: 9.0
+      sh_degree: 0
+      sigma_scale_initial: 1.0
+      sigma_scale_final: 0.5
+      sigma_warmup_steps: 16000
+      coverage_scale_boost: 0.0
+      coverage_opacity_threshold: 0.20
+    backbone:
+      predict_intrinsics: true
+  decoder:
+    opacity_temp_warmup_steps: 16000
+
+mesh:
+  tsdf_gs2d:
+    export_mode: tsdf
+    export_format: ply
+    voxel_size: -1.0
+    sdf_truc: -1.0
+    depth_truc: -1.0
+    tsdf_auto_depth_mode: depth_max
+    tsdf_auto_voxel_max: 0.010
+
+# Keep the ScanNet settings aligned with the reference 6-context/2-target index.
+dataset:
+  scannet:
+    crop_mode: gs
+    input_image_shape: [224, 224]
+    pose_norm_method: max_pairwise_d
+    view_sampler:
+      num_context_views: 6
+
+optimizer:
+  lr: 2e-4
+  warm_up_steps: 2000
+  backbone_lr_multiplier: 0.01
+
+data_loader:
+  train:
+    batch_size: 1
+
+trainer:
+  max_steps: 300002
+  val_check_interval: 2000
+
+train:
+  train_ignore_large_loss_after_steps: 40000
+  use_mono_normal_teacher: true
+  normal_bootstrap:
+    teacher_takeover_end_step: 6000
+    teacher_blend_end_step: 20000
+
+checkpointing:
+  every_n_train_steps: 10000

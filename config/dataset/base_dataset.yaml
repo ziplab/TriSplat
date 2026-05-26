@@ -1,0 +1,10 @@
+make_baseline_1: true
+relative_pose: true
+augment: true
+crop_mode: default
+background_color: [0.0, 0.0, 0.0]
+load_valid_mask: false
+apply_valid_mask: false
+overfit_to_scene: null
+skip_bad_shape: true
+pose_norm_method: max_pairwise_d

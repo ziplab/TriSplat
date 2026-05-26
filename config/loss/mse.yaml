@@ -1,0 +1,3 @@
+mse:
+  weight: 1.0
+  use_valid_mask: false

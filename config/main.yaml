@@ -1,0 +1,112 @@
+defaults:
+  - model/encoder: trisplat
+  - model/decoder: triangle_splatting_cuda
+  - loss: [mse]
+  - mesh: tsdf_gs2d
+  - _self_
+
+wandb:
+  project: trisplat
+  entity: scene-representation-group
+  name: placeholder
+  mode: disabled
+
+mode: train
+
+# dataset:
+#   overfit_to_scene: "e4774e728791dc20"
+#   # overfit_to_scene: null
+
+data_loader:
+  # Avoid having to spin up new processes to print out visualizations.
+  train:
+    num_workers: 16
+    persistent_workers: true
+    batch_size: 4
+    seed: 1234
+  test:
+    num_workers: 4
+    persistent_workers: false
+    batch_size: 1
+    seed: 2345
+  val:
+    num_workers: 8
+    persistent_workers: true
+    batch_size: 1
+    seed: 3456
+
+optimizer:
+  lr: 1.5e-4
+  warm_up_steps: 2000
+  backbone_lr_multiplier: 0.01
+
+checkpointing:
+  load: null
+  every_n_train_steps: 1000
+  save_top_k: 5
+  save_weights_only: true
+
+train:
+  depth_mode: null
+  extended_visualization: false
+  print_log_every_n_steps: 1000
+  eval_model_every_n_val: 10000
+  eval_data_length: 2000
+  eval_time_skip_steps: 3
+  train_ignore_large_loss: 0.2
+  train_ignore_large_loss_after_steps: 2000
+  train_ignore_large_loss_mse: 0.06
+  train_ignore_large_loss_pose: 1.0
+  use_mono_normal_teacher: True
+  # Default Omnidata normal teacher checkpoint path. Override via
+  # MONO_NORMAL_WEIGHTS or by passing train.mono_normal_weights_path=...
+  mono_normal_weights_path: "${oc.env:MONO_NORMAL_WEIGHTS,./pretrained_weights/omnidata_dpt_normal_v2.ckpt}"
+  normal_bootstrap:
+    enabled: true
+    teacher_source: mono
+    teacher_takeover_end_step: 3000
+    teacher_blend_end_step: 10000
+    blend_curve: cosine
+    apply_to_triangle_rotation: true
+  primitive_mask:
+    enabled: false
+    source: valid_mask
+    invalid_opacity: 0.0
+
+test:
+  output_path: outputs/test
+  align_pose: false
+  pose_align_steps: 100
+  rot_opt_lr:  0.005
+  trans_opt_lr:  0.005
+  compute_scores: true
+  save_image: true
+  save_gt_image: false
+  save_video: false
+  save_compare: false
+  post_opt_gs: false
+  post_opt_gs_iter: 200
+  save_context: false
+  save_debug_info: false
+  save_scene_ranking: true
+  render_chunk_size: 1000
+  render_interpolated_target: false
+  interpolated_target_frames: 60
+  render_smooth_context_target: false
+  smooth_context_frames: 300
+  smooth_context_chaikin_refinements: 5
+  export_mesh: false
+  mesh_gt_path: null
+
+seed: 111123
+
+trainer:
+  max_steps: -1
+  val_check_interval: 1000
+  gradient_clip_val: 0.5
+  num_nodes: 1
+  precision: 32-true
+
+hydra:
+  run:
+    dir: outputs/exp_${wandb.name}/${now:%Y-%m-%d_%H-%M-%S}

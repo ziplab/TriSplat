@@ -1,0 +1,6 @@
+name: local_global
+
+intrinsics_embed_degree: 4
+intrinsics_embed_type: pixelwise
+predict_intrinsics: true
+use_pred_intrinsics_for_embed: false

@@ -1,0 +1,22 @@
+name: boundedv3
+
+num_target_views: 1
+num_context_views: 2
+
+min_distance_between_context_views: 2
+max_distance_between_context_views: 6
+min_distance_to_context_views: 0
+max_distance_to_context_views: 0
+
+context_gap_warm_up_steps: 0
+target_gap_warm_up_steps: 0
+
+initial_min_distance_between_context_views: 2
+initial_max_distance_between_context_views: 6
+initial_max_distance_to_context_views: 0
+
+hard_max_distance_between_context_views: 10
+
+extra_views_sampling_strategy: farthest_point
+target_views_replace_sample: True
+permute_context_views: False

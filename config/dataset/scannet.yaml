@@ -1,0 +1,35 @@
+defaults:
+  - base_dataset
+  - view_sampler: evaluation
+
+name: scannet
+roots: ["${oc.env:SCANNET_ROOT,./data/scannet}"]
+
+original_image_shape: [968, 1296]
+input_image_shape: [224, 224]
+crop_mode: gs
+background_color: [0.0, 0.0, 0.0]
+cameras_are_circular: false
+
+baseline_min: 1e-3
+baseline_max: 1e2
+max_fov: 120.0
+make_baseline_1: true
+augment: false
+relative_pose: true
+skip_bad_shape: false
+test_len: -1
+test_chunk_interval: 1
+pose_norm_method: max_pairwise_d
+
+near: 0.1
+far: 10.0
+skip_bad_pose: true
+shuffle_val: false
+train_times_per_scene: 1
+
+view_sampler:
+  index_path: assets/evaluation_index_scannet_mesh_6ctx_2tgt.json
+  num_context_views: 6
+  target_mode: indexed
+  target_stride: 1
