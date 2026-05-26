@@ -11,7 +11,7 @@
   <a href="https://github.com/puLangMu">Zimu Li</a><sup>1,*</sup> &nbsp;
   <a href="https://chuan-10.github.io/">Jinchuan Shi</a><sup>1</sup> &nbsp;
   <a href="https://steve-zeyu-zhang.github.io/">Zeyu Zhang</a><sup>1</sup> &nbsp;
-  <a href="https://botaoye.github.io/">Botao Ye</a><sup>2,3</sup> &nbsp;
+  <a href="https://botaoye.github.io/">Botao Ye</a><sup>2,3</sup> <br />
   <a href="https://people.inf.ethz.ch/~pomarc/">Marc Pollefeys</a><sup>2,4</sup> &nbsp;
   <a href="https://donydchen.github.io/">Donny Y. Chen</a><sup>5</sup> &nbsp;
   <a href="https://bohanzhuang.github.io/">Bohan Zhuang</a><sup>1</sup> &nbsp;
