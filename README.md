@@ -7,21 +7,21 @@
 </p>
 
 <p align="center">
-  <a href="https://lhmd.top/">Weijie Wang</a><sup>1,*</sup>
-  <a href="https://github.com/puLangMu">Zimu Li</a><sup>1,*</sup>
-  <a href="https://chuan-10.github.io/">Jinchuan Shi</a><sup>1</sup>
-  <a href="https://steve-zeyu-zhang.github.io/">Zeyu Zhang</a><sup>1</sup>
-  <a href="https://botaoye.github.io/">Botao Ye</a><sup>2,3</sup>
-  <a href="https://people.inf.ethz.ch/~pomarc/">Marc Pollefeys</a><sup>2,4</sup>
-  <a href="https://donydchen.github.io/">Donny Y. Chen</a><sup>5</sup>
-  <a href="https://bohanzhuang.github.io/">Bohan Zhuang</a><sup>1</sup>
+  <a href="https://lhmd.top/">Weijie Wang</a><sup>1,*</sup> &nbsp;
+  <a href="https://github.com/puLangMu">Zimu Li</a><sup>1,*</sup> &nbsp;
+  <a href="https://chuan-10.github.io/">Jinchuan Shi</a><sup>1</sup> &nbsp;
+  <a href="https://steve-zeyu-zhang.github.io/">Zeyu Zhang</a><sup>1</sup> &nbsp;
+  <a href="https://botaoye.github.io/">Botao Ye</a><sup>2,3</sup> &nbsp;
+  <a href="https://people.inf.ethz.ch/~pomarc/">Marc Pollefeys</a><sup>2,4</sup> &nbsp;
+  <a href="https://donydchen.github.io/">Donny Y. Chen</a><sup>5</sup> &nbsp;
+  <a href="https://bohanzhuang.github.io/">Bohan Zhuang</a><sup>1</sup> &nbsp;
 </p>
 
 <p align="center">
-  <sup>1</sup>Zhejiang University
-  <sup>2</sup>ETH Zurich
-  <sup>3</sup>ETH AI Center
-  <sup>4</sup>Microsoft
+  <sup>1</sup>Zhejiang University &nbsp; &nbsp;
+  <sup>2</sup>ETH Zurich &nbsp; &nbsp;
+  <sup>3</sup>ETH AI Center &nbsp; &nbsp;
+  <sup>4</sup>Microsoft &nbsp; &nbsp;
   <sup>5</sup>Monash University
 </p>
 
@@ -172,7 +172,7 @@ If you find this repository useful, please cite:
 @article{wang2026trisplat,
   title={TriSplat: Simulation-Ready Feed-Forward 3D Scene Reconstruction},
   author={Wang, Weijie and Li, Zimu and Shi, Jinchuan and Zhang, Zeyu and Ye, Botao and Pollefeys, Marc and Chen, Donny Y. and Zhuang, Bohan},
-  journal={arXiv preprint},
+  journal={arXiv preprint arXiv:2605.26115},
   year={2026}
 }
 ```
