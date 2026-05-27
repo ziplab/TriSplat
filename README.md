@@ -35,7 +35,7 @@ TriSplat is a feed-forward 3D reconstruction model that predicts simulation-read
 ## Method
 
 <p align="center">
-  <img src="https://lhmd.top/trisplat/assets/figures/web/pipeline2.png" alt="TriSplat pipeline" width="100%">
+  <img src="https://lhmd.top/trisplat/assets/figures/pipeline2.png" alt="TriSplat pipeline" width="100%">
 </p>
 
 Given sparse input views, TriSplat predicts dense local point maps, triangle attributes, camera poses, and optional intrinsics. Point-map geometry anchors triangle orientation through geometry normals, a learned normal refiner, and a monocular-normal bootstrap. A differentiable triangle rasterizer renders RGB, depth, and normals, while mesh export only needs opacity filtering, winding correction, and duplicate-vertex merging.
