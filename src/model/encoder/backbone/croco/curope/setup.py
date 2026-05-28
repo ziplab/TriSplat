@@ -4,11 +4,16 @@
 import os
 
 from setuptools import setup
+import torch
 from torch import cuda
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 
 def _arch_flags() -> list[str]:
+    if getattr(torch.version, "hip", None):
+        # Let PyTorch choose ROCm arch flags and avoid NVIDIA-only -gencode flags.
+        return []
+
     arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", "").strip()
     if arch_list:
         flags: list[str] = []
@@ -46,7 +51,7 @@ setup(
                     "kernels.cu",
                 ],
                 extra_compile_args = dict(
-                    nvcc=['-O3','--ptxas-options=-v',"--use_fast_math"]+all_cuda_archs, 
+                    nvcc=['-O3']+all_cuda_archs,
                     cxx=['-O3'])
                 )
     ],
