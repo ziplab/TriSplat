@@ -85,74 +85,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-patch_diff_gaussian_source() {
-    local source_dir="$1"
-
-    python - "${source_dir}" <<'PY'
-from pathlib import Path
-import sys
-
-src = Path(sys.argv[1])
-for path in list(src.rglob("*.h")) + list(src.rglob("*.hip")) + list(src.rglob("*.cu")):
-    text = path.read_text()
-    text = text.replace('#include "device_launch_parameters.h"\n', "")
-    text = text.replace("#include <device_launch_parameters.h>\n", "")
-    text = text.replace("#include <cooperative_groups/reduce.h>\n", "")
-    text = text.replace("__trap();", "__builtin_trap();")
-    text = text.replace("std::uintptr_t", "uintptr_t")
-    text = text.replace("<< <", "<<<")
-    text = text.replace(">> >", ">>>")
-    if path.name in {"backward.hip", "backward.cu"}:
-        reduce_marker = "template <typename T>\n__device__ void inline reduce_helper(int lane, int i, T *data) {"
-        reduce_helpers = "\n".join([
-            "__device__ void inline reduce_add(float &a, float b) { a += b; }",
-            "__device__ void inline reduce_add(float2 &a, float2 b) { a.x += b.x; a.y += b.y; }",
-            "__device__ void inline reduce_add(float3 &a, float3 b) { a.x += b.x; a.y += b.y; a.z += b.z; }",
-            "__device__ void inline reduce_add(float4 &a, float4 b) { a.x += b.x; a.y += b.y; a.z += b.z; a.w += b.w; }",
-            "",
-        ])
-        if reduce_marker in text and "reduce_add(float2" not in text:
-            text = text.replace(reduce_marker, reduce_helpers + reduce_marker)
-        text = text.replace("data[lane] += data[lane + i];", "reduce_add(data[lane], data[lane + i]);")
-    if path.name == "helper_math.h":
-        lines = text.splitlines()
-        new_lines = []
-        i = 0
-        replacements = {
-            "inline __device__ __host__ float2 smoothstep": [
-                "inline __device__ __host__ float2 smoothstep(float2 a, float2 b, float2 x) {",
-                "  return make_float2(smoothstep(a.x, b.x, x.x), smoothstep(a.y, b.y, x.y));",
-                "}",
-            ],
-            "inline __device__ __host__ float3 smoothstep": [
-                "inline __device__ __host__ float3 smoothstep(float3 a, float3 b, float3 x) {",
-                "  return make_float3(smoothstep(a.x, b.x, x.x), smoothstep(a.y, b.y, x.y), smoothstep(a.z, b.z, x.z));",
-                "}",
-            ],
-            "inline __device__ __host__ float4 smoothstep": [
-                "inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x) {",
-                "  return make_float4(smoothstep(a.x, b.x, x.x), smoothstep(a.y, b.y, x.y), smoothstep(a.z, b.z, x.z), smoothstep(a.w, b.w, x.w));",
-                "}",
-            ],
-        }
-        while i < len(lines):
-            matched = False
-            for prefix, repl in replacements.items():
-                if lines[i].startswith(prefix):
-                    new_lines.extend(repl)
-                    while i < len(lines) and lines[i].strip() != "}":
-                        i += 1
-                    i += 1
-                    matched = True
-                    break
-            if not matched:
-                new_lines.append(lines[i])
-                i += 1
-        text = "\n".join(new_lines) + "\n"
-    path.write_text(text)
-PY
-}
-
 zip_path="${tmp_dir}/diff-gaussian-rasterization-w-pose-main.zip"
 src_dir="${tmp_dir}/diff-gaussian-rasterization-w-pose-main"
 curl -L --fail --retry 3 --connect-timeout 15 \
@@ -161,7 +93,6 @@ curl -L --fail --retry 3 --connect-timeout 15 \
 unzip -q "${zip_path}" -d "${tmp_dir}"
 mkdir -p "${src_dir}/third_party/glm"
 cp -r "${repo_root}/submodules/diff-triangle-rasterization/third_party/glm/." "${src_dir}/third_party/glm/"
-patch_diff_gaussian_source "${src_dir}"
 pip install --no-build-isolation "${src_dir}"
 
 cd "${repo_root}/submodules/diff-triangle-rasterization"
