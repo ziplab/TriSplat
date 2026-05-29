@@ -1,0 +1,4 @@
+normal_consistency:
+  weight: 0.05
+  start_step: 4000
+  use_cosine: true

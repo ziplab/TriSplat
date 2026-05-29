@@ -1,0 +1,53 @@
+defaults:
+  - backbone: local_global
+
+name: trisplat
+
+opacity_mapping:
+  initial: 0.0
+  final: 0.0
+  warm_up: 1
+
+num_surfaces: 1
+
+gaussian_adapter:
+  gaussian_scale_min: 0.5
+  gaussian_scale_max: 15.0
+  sh_degree: 0
+
+visualizer:
+  num_samples: 8
+  min_resolution: 256
+  export_ply: false
+
+pose_free: true
+pretrained_weights: ""
+
+geometry_normal:
+  smooth_kernel: 5
+  normal_smooth_kernel: 5
+  normal_smooth_iterations: 1
+  anchor_rotation: true
+  refiner:
+    enabled: true
+    arch: unet
+    output_mode: residual
+    detach_point_cloud: true
+    use_rgb: true
+    use_depth: true
+    hidden_dim: 64
+    num_blocks: 3
+    num_scales: 3
+    kernel_size: 3
+    residual_scale: 0.25
+  flip_to_camera: true
+  eps: 1.0e-6
+
+gt_pose_sampling_decay_start_step: 1000
+gt_pose_sampling_decay_end_step: 5000
+gt_pose_final_sample_ratio: 0.9
+
+use_checkpoint: true
+gaussian_downsample_ratio: 1
+gaussians_per_axis: 14
+upscale_token_ratio: 2

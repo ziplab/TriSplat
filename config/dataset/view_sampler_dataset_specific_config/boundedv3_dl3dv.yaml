@@ -1,0 +1,14 @@
+min_distance_between_context_views: 3
+max_distance_between_context_views: 8
+min_distance_to_context_views: 0
+max_distance_to_context_views: 0
+context_gap_warm_up_steps: 10000
+target_gap_warm_up_steps: 0
+initial_min_distance_between_context_views: 2
+initial_max_distance_between_context_views: 5
+hard_max_distance_between_context_views: 180
+initial_max_distance_to_context_views: 0
+extra_views_sampling_strategy: farthest_point
+target_views_replace_sample: True
+permute_context_views: False
+num_target_views: 4

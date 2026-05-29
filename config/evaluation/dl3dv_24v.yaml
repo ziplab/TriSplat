@@ -1,0 +1,50 @@
+# @package _global_
+
+dataset:
+  dl3dv:
+    view_sampler:
+      num_context_views: 24
+      index_path: assets/dl3dv_start_0_distance_150_ctx_24v_tgt_8v.json
+
+evaluation:
+  methods:
+    - name: Ours_gtPose
+      key: Ours_gtPose
+      path: outputs/eval/Ours_gtPose
+    - name: Ours_PoseFree
+      key: Ours_PoseFree
+      path: outputs/eval/Ours_PoseFree
+    - name: Ours_NoIntrin
+      key: Ours_NoIntrin
+      path: outputs/eval/Ours_NoIntrin
+    - name: Ours_Opt
+      key: Ours_Opt
+      path: outputs/eval/Ours_Opt
+    - name: NoPoSplat
+      key: NoPoSplat
+      path: outputs/eval/NoPoSplat
+    - name: MVSplat
+      key: MVSplat
+      path: outputs/eval/MVSplat
+    - name: InstantSplat
+      key: InstantSplat
+      path: outputs/eval/InstantSplat
+    - name: AnySplat
+      key: AnySplat
+      path: outputs/eval/AnySplat
+    - name: DepthSplat
+      key: DepthSplat
+      path: outputs/eval/DepthSplat
+
+  side_by_side_path: null
+  animate_side_by_side: false
+  highlighted:
+    # Main Paper
+    - scene: 32ce9b303717a29d
+      target_index: 216
+    - scene: 45e6fa48ddd00e87
+      target_index: 127
+    - scene: 7a13c5debea977a8
+      target_index: 37
+
+  output_metrics_path: baselines/re10k/evaluation_metrics.json

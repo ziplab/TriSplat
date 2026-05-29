@@ -1,0 +1,3 @@
+perceptual:
+  weight: 0.5
+  apply_after_step: 0

@@ -1,0 +1,5 @@
+normal_teacher:
+  weight: 0.01
+  start_step: 0
+  use_cosine: true
+  use_l1: false

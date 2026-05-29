@@ -1,0 +1,12 @@
+name: triangle_splatting_cuda
+
+background_color: [0.0, 0.0, 0.0]
+
+opacity_temp_initial: 1.0
+opacity_temp_final: 5.0
+opacity_temp_warmup_steps: 8000
+alpha_floor_min: 0.02
+alpha_floor_warmup_steps: 0
+
+sh_degree: 0
+prune_opacity_threshold: 0.
