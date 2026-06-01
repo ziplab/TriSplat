@@ -138,6 +138,41 @@ bash scripts/eval/eval_dl3dv_mesh.sh \
   --data-root "$DL3DV_ROOT"
 ```
 
+## Custom Image Inference
+
+For raw custom images, use the plain torch inference script. It does not use the
+Lightning `Trainer` or dataset `DataModule`; it loads images from a folder, runs
+the pose-free encoder directly, and exports a direct triangle mesh plus predicted
+camera poses:
+
+```bash
+python -m src.scripts.infer_custom_mesh \
+  --image-dir /path/to/images \
+  --ckpt checkpoints/re10k_trisplat.ckpt \
+  --out-dir outputs/custom_mesh/demo \
+  --num-views 2 \
+  --force
+```
+
+By default the script uses the lightweight RE10K 2-view experiment and selects
+views uniformly from the folder. Use `--view-indices 0,5` to choose frames
+explicitly. If camera intrinsics are unavailable, the script creates a normalized
+pinhole camera from a 60 degree horizontal FOV; override this with `--fov-deg` or
+`--intrinsics-json`.
+
+The main outputs are:
+
+```text
+outputs/custom_mesh/demo/mesh/DIRECT_triangle_mesh.ply
+outputs/custom_mesh/demo/mesh/DIRECT_triangle_mesh_post.ply
+outputs/custom_mesh/demo/predicted_c2w.json
+outputs/custom_mesh/demo/inference_summary.json
+```
+
+Pass extra Hydra options with repeated `--override` flags, for example
+`--override mesh.tsdf_gs2d.direct_post_process=false` to save only the raw direct
+mesh.
+
 ## Simulation
 
 TriSplat exports ordinary triangle meshes, so the output can be opened directly by common graphics and simulation tools. The evaluation scripts above write per-scene meshes under:
@@ -149,7 +184,11 @@ outputs/<eval_root>/<run_name>/<scene>/mesh/DIRECT_triangle_mesh_post.ply
 outputs/<eval_root>/<run_name>/<scene>/mesh/DIRECT_triangle_mesh_post.off
 ```
 
-The `_post` mesh is the default rendering and simulation output. It applies connected-component cleanup to the direct mesh, keeping the largest components and removing small disconnected floaters, unreferenced vertices, and degenerate triangles. For example, after running `scripts/eval/eval_re10k_mesh.sh`, use:
+The `_post` mesh is the default rendering and simulation output. Direct triangle
+meshes use quantile geometry cleanup to remove non-finite, degenerate, very large,
+or distant triangle outliers before compacting referenced vertices. TSDF meshes
+still use connected-component cleanup. For example, after running
+`scripts/eval/eval_re10k_mesh.sh`, use:
 
 ```bash
 ls outputs/re10k_mesh_eval/re10k_mesh_eval/*/mesh/DIRECT_triangle_mesh_post.ply

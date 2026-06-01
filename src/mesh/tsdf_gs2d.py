@@ -82,8 +82,16 @@ class TsdfGs2dCfg:
     """Mesh: filter direct triangles with opacity threshold (<0 disables filter)"""
     direct_opacity_threshosld: Optional[float] = None
     """Deprecated typo alias for direct_opacity_threshold."""
-    direct_post_process: bool = False
-    """Mesh: apply connected-component post-process for direct mesh"""
+    direct_post_process: bool = True
+    """Mesh: apply quantile geometry post-process for direct mesh"""
+    direct_post_max_edge_quantile: float = 0.995
+    """Direct post: max-edge quantile used to remove large triangle outliers."""
+    direct_post_area_quantile: float = 0.995
+    """Direct post: area quantile used to remove large triangle outliers."""
+    direct_post_radius_quantile: float = 0.999
+    """Direct post: centroid-radius quantile used to remove distant triangle outliers."""
+    direct_post_min_area: float = 1e-12
+    """Direct post: drop triangles with area <= this value before quantile filtering."""
     direct_skip_dedup: bool = False
     """Skip vertex deduplication for maximum speed (larger file, no shared vertices)"""
     direct_bench_10: bool = False
@@ -408,6 +416,27 @@ class TsdfPostProcessStats:
     final_num_triangles: int
 
 
+@dataclass(frozen=True)
+class DirectPostProcessStats:
+    input_vertices: int
+    input_triangles: int
+    output_triangles: int
+    removed_triangles: int
+    removed_ratio: float
+    finite_valid_triangles: int
+    max_edge_quantile: float
+    area_quantile: float
+    radius_quantile: float
+    max_edge_threshold: float
+    area_threshold: float
+    radius_threshold: float
+    min_area: float
+    center_x: float
+    center_y: float
+    center_z: float
+    output_vertices: int
+
+
 class TsdfGs2d(GSMeshExporter[TsdfGs2dCfg, TsdfGs2dCfgWrapper]):
     """
     TSDF fusion (2DGS ver)
@@ -519,6 +548,18 @@ class TsdfGs2d(GSMeshExporter[TsdfGs2dCfg, TsdfGs2dCfgWrapper]):
                 raise ValueError(f"mesh.tsdf_gs2d.{name} must be in (0, 1], got {value}.")
         if int(self.cfg.tsdf_post_min_cluster_triangles) < 0:
             raise ValueError("mesh.tsdf_gs2d.tsdf_post_min_cluster_triangles must be >= 0.")
+
+    def _validate_direct_post_cfg(self) -> None:
+        for name in (
+            "direct_post_max_edge_quantile",
+            "direct_post_area_quantile",
+            "direct_post_radius_quantile",
+        ):
+            value = float(getattr(self.cfg, name))
+            if not (0.0 < value <= 1.0):
+                raise ValueError(f"mesh.tsdf_gs2d.{name} must be in (0, 1], got {value}.")
+        if float(self.cfg.direct_post_min_area) < 0.0:
+            raise ValueError("mesh.tsdf_gs2d.direct_post_min_area must be >= 0.")
 
     @staticmethod
     def _compute_retained_ratio(kept_values: np.ndarray, total_values: np.ndarray) -> float:
@@ -3099,12 +3140,107 @@ class TsdfGs2d(GSMeshExporter[TsdfGs2dCfg, TsdfGs2dCfgWrapper]):
         self,
         output_dir: Path,
         basename: str,
-        stats: TsdfPostProcessStats,
+        stats: TsdfPostProcessStats | DirectPostProcessStats,
     ) -> None:
         payload = asdict(stats)
         path = output_dir / f"{basename}_post_stats.json"
         with path.open("w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
+
+    def _post_process_direct_quantile_mesh(
+        self,
+        mesh: o3d.geometry.TriangleMesh,
+    ) -> tuple[o3d.geometry.TriangleMesh, DirectPostProcessStats]:
+        self._validate_direct_post_cfg()
+
+        vertices = np.asarray(mesh.vertices, dtype=np.float64)
+        faces = np.asarray(mesh.triangles, dtype=np.int64)
+        tri = vertices[faces]
+        finite = np.isfinite(tri).all(axis=(1, 2))
+
+        edge_01 = np.linalg.norm(tri[:, 0] - tri[:, 1], axis=1)
+        edge_12 = np.linalg.norm(tri[:, 1] - tri[:, 2], axis=1)
+        edge_20 = np.linalg.norm(tri[:, 2] - tri[:, 0], axis=1)
+        max_edge = np.maximum(edge_01, np.maximum(edge_12, edge_20))
+        area = 0.5 * np.linalg.norm(
+            np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]),
+            axis=1,
+        )
+        centroid = tri.mean(axis=1)
+        robust_center = np.median(centroid[finite], axis=0) if np.any(finite) else np.zeros(3)
+        radius = np.linalg.norm(centroid - robust_center[None, :], axis=1)
+
+        min_area = float(self.cfg.direct_post_min_area)
+        valid_base = (
+            finite
+            & np.isfinite(max_edge)
+            & np.isfinite(area)
+            & np.isfinite(radius)
+            & (area > min_area)
+        )
+        if not np.any(valid_base):
+            raise ValueError("No valid direct triangles remain after finite/degenerate checks.")
+
+        max_edge_quantile = float(self.cfg.direct_post_max_edge_quantile)
+        area_quantile = float(self.cfg.direct_post_area_quantile)
+        radius_quantile = float(self.cfg.direct_post_radius_quantile)
+        max_edge_threshold = float(np.quantile(max_edge[valid_base], max_edge_quantile))
+        area_threshold = float(np.quantile(area[valid_base], area_quantile))
+        radius_threshold = float(np.quantile(radius[valid_base], radius_quantile))
+
+        keep = (
+            valid_base
+            & (max_edge <= max_edge_threshold)
+            & (area <= area_threshold)
+            & (radius <= radius_threshold)
+        )
+        if not np.any(keep):
+            raise ValueError("No direct triangles remain after quantile filtering.")
+
+        kept_faces = faces[keep]
+        used_vertices, inverse = np.unique(kept_faces.reshape(-1), return_inverse=True)
+        out_vertices = vertices[used_vertices]
+        out_faces = inverse.reshape(-1, 3).astype(np.int32, copy=False)
+
+        mesh_post = o3d.geometry.TriangleMesh()
+        mesh_post.vertices = o3d.utility.Vector3dVector(out_vertices)
+        mesh_post.triangles = o3d.utility.Vector3iVector(out_faces)
+
+        vertex_colors = np.asarray(mesh.vertex_colors)
+        if vertex_colors.shape[0] == vertices.shape[0]:
+            mesh_post.vertex_colors = o3d.utility.Vector3dVector(vertex_colors[used_vertices])
+        vertex_normals = np.asarray(mesh.vertex_normals)
+        if vertex_normals.shape[0] == vertices.shape[0]:
+            mesh_post.vertex_normals = o3d.utility.Vector3dVector(vertex_normals[used_vertices])
+
+        stats = DirectPostProcessStats(
+            input_vertices=int(len(vertices)),
+            input_triangles=int(len(faces)),
+            output_triangles=int(keep.sum()),
+            removed_triangles=int((~keep).sum()),
+            removed_ratio=float((~keep).sum() / max(len(keep), 1)),
+            finite_valid_triangles=int(valid_base.sum()),
+            max_edge_quantile=max_edge_quantile,
+            area_quantile=area_quantile,
+            radius_quantile=radius_quantile,
+            max_edge_threshold=max_edge_threshold,
+            area_threshold=area_threshold,
+            radius_threshold=radius_threshold,
+            min_area=min_area,
+            center_x=float(robust_center[0]),
+            center_y=float(robust_center[1]),
+            center_z=float(robust_center[2]),
+            output_vertices=int(len(out_vertices)),
+        )
+        print(
+            f"[Mesh][post][direct] quantile "
+            f"triangles={stats.input_triangles}->{stats.output_triangles} "
+            f"removed={stats.removed_ratio:.4f} "
+            f"vertices={stats.input_vertices}->{stats.output_vertices} "
+            f"edge_q={stats.max_edge_quantile:.3f} area_q={stats.area_quantile:.3f} "
+            f"radius_q={stats.radius_quantile:.3f}"
+        )
+        return mesh_post, stats
 
     @torch.no_grad()
     def extract_mesh_bounded(self, mask_background=True):
@@ -4934,18 +5070,21 @@ class TsdfGs2d(GSMeshExporter[TsdfGs2dCfg, TsdfGs2dCfgWrapper]):
         cluster_to_keep=1000,
         *,
         mode: Literal["tsdf", "direct"] = "tsdf",
-    ) -> tuple[o3d.geometry.TriangleMesh, TsdfPostProcessStats | None]:
+    ) -> tuple[o3d.geometry.TriangleMesh, TsdfPostProcessStats | DirectPostProcessStats | None]:
         """
         Post-process a mesh to filter out floaters and disconnected parts
         """
         import copy
 
-        print("post processing the mesh to have {} clusters".format(cluster_to_keep))
         mesh_0 = copy.deepcopy(mesh)
         if not self._mesh_has_geometry(mesh_0):
-            print("[Mesh][post] skip connected-component filtering because mesh is empty.")
+            print("[Mesh][post] skip filtering because mesh is empty.")
             return mesh_0, None
 
+        if mode == "direct":
+            return self._post_process_direct_quantile_mesh(mesh_0)
+
+        print("post processing the mesh to have {} clusters".format(cluster_to_keep))
         if mode == "tsdf":
             self._validate_tsdf_post_cfg()
         with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug):

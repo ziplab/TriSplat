@@ -30,7 +30,11 @@ tsdf_gs2d:
   tsdf_post_min_cluster_triangles: 10
   tsdf_post_write_stats: true
   direct_opacity_threshold: 0.10
-  direct_post_process: false
+  direct_post_process: true
+  direct_post_max_edge_quantile: 0.995
+  direct_post_area_quantile: 0.995
+  direct_post_radius_quantile: 0.999
+  direct_post_min_area: 1.0e-12
   direct_skip_dedup: false
   direct_bench_10: false
   direct_write_frame_meshes: false
