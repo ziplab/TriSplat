@@ -21,10 +21,11 @@ Options:
   --orig-shape H W     Original packed image shape (default: 270 480)
   --max-scenes N       Optional cap for smoke testing
   --skip-export        Only render existing meshes
-  --skip-render        Only export meshes
+  --skip-render        Skip Open3D mesh render metrics
   --help               Show this message
 
-Defaults: direct mesh export, scale0.5, post-process pruning, mesh render metrics.
+Defaults: direct mesh export uses scale 0.25/9.0 with post-process pruning;
+model color render uses scale 0.5/18.0; mesh render metrics use exported meshes.
 EOF
 }
 
@@ -85,7 +86,45 @@ PY
 fi
 
 if [[ "${do_export}" == "true" ]]; then
-  cmd=(
+  mesh_cmd=(
+    python -m src.main
+    "+experiment=trisplat_dl3dv_triangle_refiner_unet_10m_224x448_test"
+    mode=test
+    "checkpointing.load=${ckpt}"
+    "dataset/view_sampler@dataset.dl3dv.view_sampler=evaluation"
+    "dataset.dl3dv.roots=[${data_root}]"
+    "dataset.dl3dv.test_roots=[${data_root}]"
+    "dataset.dl3dv.view_sampler.index_path=${export_index}"
+    "dataset.dl3dv.view_sampler.num_context_views=${num_context_views}"
+    "dataset.dl3dv.input_image_shape=[${image_h},${image_w}]"
+    "dataset.dl3dv.original_image_shape=[${orig_h},${orig_w}]"
+    test.compute_scores=false
+    test.align_pose=false
+    test.save_image=false
+    test.save_gt_image=false
+    test.save_video=false
+    test.save_compare=false
+    test.save_context=false
+    test.save_debug_info=false
+    test.save_scene_ranking=false
+    test.export_mesh=true
+    "test.output_path=${out_dir}"
+    "hydra.run.dir=${out_dir}/hydra/${run_name}"
+    mesh.tsdf_gs2d.export_mode=direct
+    mesh.tsdf_gs2d.export_format=both
+    mesh.tsdf_gs2d.direct_post_process=true
+    model.encoder.triangle_adapter.triangle_scale_min=0.25
+    model.encoder.triangle_adapter.triangle_scale_max=9.0
+    wandb.mode=disabled
+    "wandb.name=${run_name}"
+    "${extra_args[@]}"
+  )
+  printf 'Mesh export: CUDA_VISIBLE_DEVICES=%q ' "${gpus}"
+  printf '%q ' "${mesh_cmd[@]}"
+  printf '\n'
+  env CUDA_VISIBLE_DEVICES="${gpus}" "${mesh_cmd[@]}"
+
+  color_cmd=(
     python -m src.main
     "+experiment=trisplat_dl3dv_triangle_refiner_unet_10m_224x448_test"
     mode=test
@@ -106,22 +145,19 @@ if [[ "${do_export}" == "true" ]]; then
     test.save_context=false
     test.save_debug_info=false
     test.save_scene_ranking=true
-    test.export_mesh=true
+    test.export_mesh=false
     "test.output_path=${out_dir}"
-    "hydra.run.dir=${out_dir}/hydra/${run_name}"
-    mesh.tsdf_gs2d.export_mode=direct
-    mesh.tsdf_gs2d.export_format=both
-    mesh.tsdf_gs2d.direct_post_process=true
-    model.encoder.triangle_adapter.triangle_scale_min=0.25
-    model.encoder.triangle_adapter.triangle_scale_max=9.0
+    "hydra.run.dir=${out_dir}/hydra/${run_name}_color_render"
+    model.encoder.triangle_adapter.triangle_scale_min=0.5
+    model.encoder.triangle_adapter.triangle_scale_max=18.0
     wandb.mode=disabled
     "wandb.name=${run_name}"
     "${extra_args[@]}"
   )
-  printf 'Export: CUDA_VISIBLE_DEVICES=%q ' "${gpus}"
-  printf '%q ' "${cmd[@]}"
+  printf 'Color render: CUDA_VISIBLE_DEVICES=%q ' "${gpus}"
+  printf '%q ' "${color_cmd[@]}"
   printf '\n'
-  env CUDA_VISIBLE_DEVICES="${gpus}" "${cmd[@]}"
+  env CUDA_VISIBLE_DEVICES="${gpus}" "${color_cmd[@]}"
 fi
 
 if [[ "${do_render}" == "true" ]]; then
